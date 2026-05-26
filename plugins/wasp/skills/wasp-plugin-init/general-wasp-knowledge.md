@@ -35,7 +35,7 @@ Changes to `schema.prisma` are not applied until database migrations are run.
 ├── .wasp/                    # Wasp output (auto-generated, do not edit)
 ├── public/                   # Static assets
 ├── src/                      # Feature code: server `operations.ts` and client `pages.tsx` files
-├── main.wasp or main.wasp.ts # Wasp config file: routes, pages, auth, operations, jobs, etc.
+├── main.wasp or *.wasp.ts # Wasp config file: routes, pages, auth, operations, jobs, etc.
 ├── schema.prisma             # Database schema (Prisma)
 ```
 
@@ -94,7 +94,7 @@ See the **Advanced Features** section in the Wasp docs for more details.
 - ✅ `fn: import { getTasks } from "@src/tasks/operations"`
 - ❌ Never relative paths
 
-**In main.wasp.ts:**
+**In *.wasp.ts:**
 See the **TypeScript Config** section in the Wasp docs for more details.
 
 #### Operations
@@ -114,7 +114,7 @@ If you don't have full debugging visibility as described in the [Start a Wasp De
 
 | Symptom | Fix |
 |---------|-----|
-| `context.entities.X undefined` | Add entity to `entities: [...]` in main.wasp |
+| `context.entities.X undefined` | Add entity to `entities: [...]` in main.wasp or *.wasp.ts |
 | Schema changes not applying | Run `wasp db migrate-dev --name <descriptive-name>` |
 | Can't login after email signup with `Dummy` email provider | Check the server logs for the verification link or set SKIP_EMAIL_VERIFICATION_IN_DEV=true in .env.server |
 | Types stale/IDE errors after changes | Restart TS server `Cmd+Shift+P`|

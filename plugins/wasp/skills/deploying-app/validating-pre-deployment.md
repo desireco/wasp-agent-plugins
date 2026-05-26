@@ -9,7 +9,7 @@ Pre-deployment validation checks that catch common issues before deploying with 
 
 ## Before Starting
 
-1. verify user is in the app directory (check for `main.wasp` or `main.wasp.ts`)
+1. verify user is in the app directory (check for `main.wasp` or `*.wasp.ts`)
 2. ask: "Would you like me to run pre-deployment checks on your app?"
 
 ## Validation Steps
@@ -18,7 +18,7 @@ Run these checks in order. Report all issues found, then ask the user if they wa
 
 ### Step 1: Wasp Config Metadata
 
-1. Check the wasp config file (`main.wasp` or `main.wasp.ts`) for placeholder values:
+1. Check the wasp config file (`main.wasp` or `*.wasp.ts`) for placeholder values:
    - URLs are actual live URLs, not placeholder values set during the setup wizard.
    - Email provider and default from address are actual live email addresses
 
