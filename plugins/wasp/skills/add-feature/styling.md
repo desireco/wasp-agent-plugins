@@ -22,5 +22,5 @@ Configure a CSS framework and/or component libraries for your Wasp app.
 ### Adding ShadCN UI
 
 1. First set up tailwind css as per the guide for [adding a css framework](#adding-a-css-framework)
-2. Fetch the guide for using [ShadCN components with Wasp](https://gist.githubusercontent.com/infomiho/b35e9366e16913949e13eaba0538f553/raw/c6da98158c1a7e46b5874868f2e7c011f24d24d1/0-README.md)
+2. Fetch the guide for using [ShadCN components with Wasp](https://raw.githubusercontent.com/wasp-lang/wasp/refs/heads/release/web/versioned_docs/version-0.23/guides/libraries/shadcn.md)
 3. Follow the installation steps in the guide

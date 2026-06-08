@@ -1,6 +1,6 @@
 ---
 name: add-feature
-description: Add Wasp's built-in features to your app — auth, email, jobs, and more. These are full-stack, batteries-included features that Wasp handles for you. Use when the user wants to add meta tags, authentication (email, social auth providers), email sending, database setup, styling (tailwind, shadcn), or other Wasp-powered functionality.
+description: Add Wasp's built-in features to your app: auth, email, jobs, and more. These are full-stack, batteries-included features that Wasp handles for you. Use when the user wants to add meta tags, authentication (email, social auth providers), email sending, database setup, styling (tailwind, shadcn), or other Wasp-powered functionality.
 ---
 
 # add-feature
@@ -9,23 +9,24 @@ Add Wasp's batteries-included features to your app. Each invocation focuses on o
 
 ## Before Starting
 
-1. Verify user is in the app directory (check for wasp config file: `main.wasp` or `*.wasp.ts`)
+1. Verify user is in the app directory (check for `main.wasp.ts`)
 
 ## Available Wasp Features
 
 Present these features to the user and let them choose ONE to configure:
 
-| Feature | Description |
-|---------|-------------|
-| **App Branding** | Set your app's name, description, and meta tags |
-| **Authentication** | Add login methods (Email, Google, GitHub, etc.) |
-| **Email Provider** | Configure email sending (SendGrid, Mailgun, etc.) |
-| **Database** | Set up your database (PostgreSQL, SQLite, etc.) |
+| Feature               | Description                                            |
+| --------------------- | ------------------------------------------------------ |
+| **App Branding**      | Set your app's name, description, and meta tags        |
+| **Authentication**    | Add login methods (Email, Google, GitHub, etc.)        |
+| **Email Provider**    | Configure email sending (SendGrid, Mailgun, etc.)      |
+| **Database**          | Set up your database (PostgreSQL, SQLite, etc.)        |
 | **Styling (CSS, UI)** | Add Tailwind CSS or ShadCN UI (on top of Tailwind CSS) |
 
 ## Feature Selection
 
 Using the `AskUserQuestion` tool, ask the user which Wasp feature they'd like to configure:
+
 - Use the most relevant options as selectable choices (limited to 2-4 options)
 - Remind users they can select "Other" to choose from additional features
 
@@ -48,6 +49,7 @@ When asking the user to choose from fetched lists (e.g., auth methods, email pro
 2. **Use the most popular/common options** as the selectable choices in `AskUserQuestion` (limited to 2-4 options).
 3. **Remind users** they can select "Other" to specify any option from the full list that isn't shown in the quick-select options.
 4. **Example format:**
+
    ```
    Available auth methods: Username & Password, Email, Google, GitHub, Discord, Keycloak, Slack
 
@@ -59,8 +61,9 @@ When asking the user to choose from fetched lists (e.g., auth methods, email pro
 ## After Feature Completion
 
 After completing a feature configuration:
+
 1. Summarize the changes made
 2. If applicable, let them know if there are any environment variables they need to set and ask them if they need guidance on how to set them
-  - if so, fetch the raw github doc file URL for the environment variables and guide the user through the process
+   - If so, fetch the raw github doc file URL for the environment variables and guide the user through the process
 3. Ask if the user would like to configure another feature
-3. If yes, return to [Feature Selection](#feature-selection)
+   - If yes, return to [Feature Selection](#feature-selection)

@@ -1,6 +1,6 @@
 ---
 name: expert-advice
-argument-hint: [advice request]
+argument-hint: "[advice-request]"
 description: Get advice on app improvements and functionality from a Wasp expert. Takes optional arguments for more specific requests e.g. `/expert-advice how can I improve account management?`.
 ---
 

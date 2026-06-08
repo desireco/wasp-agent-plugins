@@ -6,11 +6,13 @@ description: Shows the Wasp plugin's available features, commands, and skills.
 1. run the [check-wasp-init hook](../../hooks/check-wasp-init.js) using the Bash tool with `node` command to check if the Wasp plugin has been initialized.
 2. let the user know if the Wasp plugin has been initialized or not.
 3. if the Wasp plugin has not been initialized (the hook outputs JSON), let the user know they should take care of this first by running `/wasp-plugin-init`:
+
 ```markdown
 ⚠️
 The Wasp plugin hasn't been initialized for the current project.
 Run `/wasp-plugin-init` to get the plugin's full functionality.
 ```
+
 4. display the [Wasp Plugin for Claude Code](#wasp-plugin-for-claude-code) section to the user exactly as it is below.
 
 --- --- 🐝 🐝 🐝 --- ---
@@ -28,7 +30,6 @@ This plugin makes Claude Code, Codex, Copilot, etc. work better with Wasp by:
 
 The result: The agent actually understands Wasp instead of guessing.
 
-
 ## Quick Reference
 
 Skills:
@@ -40,14 +41,13 @@ Skills:
 
 ## 💬 Example Prompts
 
-- *"Add Google authentication to my app"*
-- *"Help me add ShadCN UI to my app"*
-- *"Migrate the database from SQLite to PostgreSQL and start it for me"*
-- *"Set up email sending with SendGrid"*
-- *"Solve the errors in the browser using the Chrome DevTools MCP server"*
-- *"Why isn't my recurring job working?"*
-- *"Deploy my app to Railway"*
-
+- _"Add Google authentication to my app"_
+- _"Help me add ShadCN UI to my app"_
+- _"Migrate the database from SQLite to PostgreSQL and start it for me"_
+- _"Set up email sending with SendGrid"_
+- _"Solve the errors in the browser using the Chrome DevTools MCP server"_
+- _"Why isn't my recurring job working?"_
+- _"Deploy my app to Railway"_
 
 ## 📖 Documentation Access
 

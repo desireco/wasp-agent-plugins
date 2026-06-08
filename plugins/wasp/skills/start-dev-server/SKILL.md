@@ -22,10 +22,13 @@ If the user does have their own DATABASE_URL env var set, move on to [Step 2](#s
 Check the `schema.prisma` file in the project root for the `datasource` block to see which database is being used.
 
 #### SQLite
+
 **Skip to [Step 2](#step-2-start-dev-server):** SQLite stores data in a local file, no database server needed.
 
 #### PostgreSQL
+
 Start the managed database container as a background task:
+
 ```bash
 wasp start db
 ```
@@ -38,11 +41,13 @@ Wait 5-15 seconds for the database to be ready.
 ### Step 2: Start Dev Server
 
 Start the Wasp development server as a background task:
+
 ```bash
 wasp start
 ```
 
 If this is the first time starting the app, or if there are pending migrations, run the following command:
+
 ```bash
 wasp db migrate-dev --name <migration-name>
 ```
@@ -60,12 +65,12 @@ Confirm client (`localhost:3000`) and server (`localhost:3001`) are running by c
 
 Ask the user (via the AskUserQuestion tool) which method they'd like to use for giving the agent visibility into the browser console:
 
-| Option | Description |
-|--------|-------------|
-| **Chrome DevTools MCP (recommended)** | Must be installed |
-| **Built-in Chrome** | Use Claude Code's built-in browser connection (check status with `/chrome` command) |
-| **Manual** | User will manually copy/paste console output when needed |
-| **Other** | User has another preference |
+| Option                                | Description                                                                         |
+| ------------------------------------- | ----------------------------------------------------------------------------------- |
+| **Chrome DevTools MCP (recommended)** | Must be installed                                                                   |
+| **Built-in Chrome**                   | Use Claude Code's built-in browser connection (check status with `/chrome` command) |
+| **Manual**                            | User will manually copy/paste console output when needed                            |
+| **Other**                             | User has another preference                                                         |
 
 For the Chrome DevTools MCP option, if not already installed, add the following config to their mcp client:
 
