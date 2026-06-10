@@ -31,6 +31,19 @@ Changes to `schema.prisma` are not applied until database migrations are run.
 
 ## Project Reference
 
+### Config File Format
+
+How you configure a Wasp app depends on the Wasp version. Detect the format before reading docs or editing the config:
+
+- **`main.wasp`** → **Wasp DSL** (Wasp `< 0.24`): a custom config language (`app Name { ... }`).
+- **`main.wasp.ts`** → TypeScript config, but in one of two flavors:
+  - **TS Config** (Wasp `< 0.24`): imports `wasp-config`, uses `new App(...)` plus method calls like `app.page(...)`.
+  - **Wasp Spec** (Wasp `>= 0.24`): imports `@wasp.sh/spec`, uses a single `app({ ..., spec: [...] })` call.
+
+  The filename alone can't tell TS Config from Wasp Spec. Disambiguate by the import (`wasp-config` vs `@wasp.sh/spec`) or by running `wasp version`.
+
+Always read the config docs for the **detected** format before editing (see [Documentation](#documentation)): the Wasp DSL and TS Config live under the **legacy** guides, the Wasp Spec under the **Wasp Spec** general docs.
+
 ### Structure
 
 ```
@@ -38,7 +51,7 @@ Changes to `schema.prisma` are not applied until database migrations are run.
 ├── .wasp/                    # Wasp output (auto-generated, do not edit)
 ├── public/                   # Static assets
 ├── src/                      # Feature code: server `operations.ts` and client `pages.tsx` files
-├── main.wasp.ts              # Wasp Spec file: routes, pages, auth, operations, jobs, etc.
+├── main.wasp or main.wasp.ts # Wasp config file: routes, pages, auth, operations, jobs, etc.
 ├── schema.prisma             # Database schema (Prisma)
 ```
 
@@ -49,15 +62,17 @@ Unless user specifies otherwise, use a vertical, per-feature code organization (
 ```
 src/
 ├── tasks/
-│   ├── tasks.wasp.ts      # Wasp Spec
+│   ├── tasks.wasp.ts      # Wasp Spec only (0.24+): per-feature config split
 │   ├── TasksPage.tsx      # Page component
 │   ├── TaskList.tsx       # Component
 │   └── operations.ts      # Queries & actions
 ├── auth/
-│   ├── auth.wasp.ts
+│   ├── auth.wasp.ts       # Wasp Spec only (0.24+)
 │   ├── LoginPage.tsx
 │   └── google.ts
 ```
+
+Splitting config across per-feature `*.wasp.ts` files is a Wasp Spec feature (0.24+). With the Wasp DSL or TS Config, all config lives in the single `main.wasp` / `main.wasp.ts` file.
 
 ### Starter Templates
 
@@ -91,7 +106,7 @@ See the **Advanced Features** section in the Wasp docs for more details.
 
 #### Imports
 
-**In TypeScript files:**
+**In TypeScript `src/` files** (same across all Wasp versions):
 
 - ✅ `import type { User } from 'wasp/entities'`
 - ✅ `import type { GetTasks } from 'wasp/server/operations'`
@@ -99,19 +114,25 @@ See the **Advanced Features** section in the Wasp docs for more details.
 - ✅ `import { SubscriptionStatus } from '@prisma/client'` (for Prisma enums)
 - ✅ Local code: relative paths `import { X } from './X'`
 
-**In `*.wasp.ts` files:**
+**In the config file**, the import syntax depends on the [config format](#config-file-format):
 
-When importing from packages:
+**Wasp DSL (`main.wasp`, `< 0.24`)** — import inside a declaration using the `@src` alias:
+
+- ✅ `fn: import { getTasks } from "@src/tasks/operations"`
+- ❌ Never relative paths
+
+**TS Config (`main.wasp.ts` with `wasp-config`, `< 0.24`)** — use `{ import, from }` (or `{ importDefault, from }`) objects with the `@src` alias:
+
+- ✅ `fn: { import: "getTasks", from: "@src/tasks/operations" }`
+- ✅ `component: { importDefault: "MainPage", from: "@src/MainPage" }`
+
+**Wasp Spec (`main.wasp.ts` with `@wasp.sh/spec`, `0.24+`)** — package imports are normal; your own code is imported with a **relative** path plus a `with { type: "ref" }` suffix:
 
 - ✅ `import { app, page, route } from "@wasp.sh/spec";`
+- ✅ `import App from "./src/App" with { type: "ref" };`
+- ✅ `import { getTasks } from "./src/tasks/operations" with { type: "ref" };`
 
-When importing from non-`*.wasp.ts` files, alwasys add `with { type: "ref" }` suffix:
-
-- ✅ `import { App } from "./src/App" with { type: "ref" };`
-- ✅ `import { LoginPage } from "./src/auth/email/LoginPage" with { type: "ref" };`
-- ✅ `import { userSignupFields } from "./src/auth/email/userSignupFields" with { type: "ref" };`
-
-See the **Wasp Spec** section in the Wasp docs for more details.
+See the config docs for your version (linked from [Config File Format](#config-file-format)) for more details.
 
 #### Operations
 
@@ -132,7 +153,7 @@ If you don't have full debugging visibility as described in the [Start a Wasp De
 
 | Symptom                                                      | Fix                                                                                                       |
 | ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------- |
-| `context.entities.X undefined`                               | Add entity to `entities: [...]` in \*.wasp.ts                                                             |
+| `context.entities.X undefined`                               | Add entity to `entities: [...]` in the Wasp config file                                                   |
 | Schema changes not applying                                  | Run `wasp db migrate-dev --name <descriptive-name>`                                                       |
 | Can't login after email signup with `Dummy` email provider   | Check the server logs for the verification link or set SKIP_EMAIL_VERIFICATION_IN_DEV=true in .env.server |
 | Types stale/IDE errors after changes                         | Restart TS server `Cmd+Shift+P`                                                                           |

@@ -8,7 +8,7 @@ Add and configure authentication methods for your Wasp app.
 
 ## Steps
 
-1. Read the Wasp Spec file auth methods section to see which providers are already configured, if any.
+1. Read the Wasp config file auth methods section to see which providers are already configured, if any.
 
 2. **Display the full list** of available auth methods to the user.
 
@@ -19,7 +19,7 @@ Add and configure authentication methods for your Wasp app.
 
 4. For each auth method selected:
    - Fetch the raw GitHub doc URL for that auth method from the Wasp docs
-   - Add the provider to the Wasp Spec file's auth methods section according to the docs
+   - Add the provider to the Wasp config file's auth methods section according to the docs
    - If applicable, inform user they'll need to set env vars
 
 5. Check if the app has defined authentication pages (e.g. login, signup, forgot password):

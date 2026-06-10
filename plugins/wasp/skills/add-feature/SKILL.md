@@ -9,7 +9,7 @@ Add Wasp's batteries-included features to your app. Each invocation focuses on o
 
 ## Before Starting
 
-1. Verify user is in the app directory (check for `main.wasp.ts`)
+1. Verify user is in the app directory (check for the Wasp config file: `main.wasp` or `main.wasp.ts`)
 
 ## Available Wasp Features
 

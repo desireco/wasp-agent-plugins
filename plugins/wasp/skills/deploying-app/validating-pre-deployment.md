@@ -9,16 +9,16 @@ Pre-deployment validation checks that catch common issues before deploying with 
 
 ## Before Starting
 
-1. Verify user is in the app directory (check for `main.wasp.ts`)
+1. Verify user is in the app directory (check for the Wasp config file: `main.wasp` or `main.wasp.ts`)
 2. Ask: "Would you like me to run pre-deployment checks on your app?"
 
 ## Validation Steps
 
 Run these checks in order. Report all issues found, then ask the user if they want to proceed or fix issues first.
 
-### Step 1: Wasp Spec Metadata
+### Step 1: Wasp Config Metadata
 
-1. Check the Wasp Spec file (`main.wasp.ts`) for placeholder values:
+1. Check the Wasp config file (`main.wasp` or `main.wasp.ts`) for placeholder values:
    - URLs are actual live URLs, not placeholder values set during the setup wizard.
    - Email provider and default from address are actual live email addresses
 
@@ -39,7 +39,7 @@ Report format:
 
 ### Step 2: Environment Variables
 
-Based on the Wasp Spec file and the app's features, generate a checklist of required env variables, found in the "Env Variables" section of the docs, for the user to verify.
+Based on the Wasp config file and the app's features, generate a checklist of required env variables, found in the "Env Variables" section of the docs, for the user to verify.
 
 Note that the following env vars are auto-set by Wasp when using `wasp deploy` to deploy to Railway or Fly.io automatically:
 
