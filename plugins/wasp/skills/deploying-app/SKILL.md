@@ -8,8 +8,8 @@ description: deploy the Wasp app to Railway or Fly.io using Wasp CLI.
 ## Pre-Deployment
 
 1. Run a pre-deployment check via [validating-pre-deployment](./validating-pre-deployment.md) to validate configuration.
-2. present the list of supported `wasp deploy` providers under the "Wasp Deploy" section of the docs and ask the user to choose one.
-3. follow the steps from the chosen provider's guide to deploy the app.
+2. Present the list of supported `wasp deploy` providers under the "Wasp Deploy" section of the docs and ask the user to choose one.
+3. Follow the steps from the chosen provider's guide to deploy the app.
 
 ## OAuth Redirect URLs
 
