@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added a client-side import cheat-sheet covering `wasp/client/operations`, `wasp/server/operations`, `wasp/entities`, `wasp/server/auth`, and `@tanstack/react-query`.
 - Added "Migrations in non-interactive (agent) shells" covering the `migrate dev` TTY abort and the `prisma migrate diff` + `migrate deploy` fallback (with `reset --force` reserved for intentional data-loss resets).
 - Added "Seeding the Database" section covering `db.seeds` and `wasp db seed [name]`, including the per-database vs. per-user-default distinction.
-- Added "Creating a verified user for E2E / integration tests" using `hashPassword` from `wasp/server/auth` as an alternative to driving the React-controlled auth form.
+- Added "Creating a verified user for E2E / integration tests" using `hashPassword` from `wasp/auth/password` as an alternative to driving the React-controlled auth form.
 - Expanded the Common Mistakes table with rows for generated-type errors, non-interactive migration failures, `useQueryClient` import source, and missing UI refresh after mutations.
 
 ### Changed

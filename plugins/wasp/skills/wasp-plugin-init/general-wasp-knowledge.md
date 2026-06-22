@@ -251,14 +251,14 @@ qc.invalidateQueries({ queryKey: ["getTasks"] });
 | `useQueryClient` (manual cache control) | `@tanstack/react-query` |
 | Server operation types (`GetTasks`, `CreateTask`) | `wasp/server/operations` (type-only) |
 | Entity types (`Task`, `User`) | `wasp/entities` (type-only) |
-| `hashPassword` / `verifyPassword` (e.g. seeding a verified user for tests) | `wasp/server/auth` |
+| `hashPassword` / `verifyPassword` (e.g. seeding a verified user for tests) | `wasp/auth/password` |
 
 ##### Creating a verified user for E2E / integration tests
 
 Wasp's auth form uses React-controlled inputs that reject synthetic events, so browser automation often cannot drive signup. For tests that need a real authenticated user, seed one directly with Wasp's own password hasher:
 
 ```ts
-import { hashPassword } from "wasp/server/auth";
+import { hashPassword } from "wasp/auth/password";
 
 // Create a User + Auth + AuthIdentity (schema is generated in .wasp/out/db/schema.prisma)
 const user = await prisma.user.create({ data: { /* … */ } });
