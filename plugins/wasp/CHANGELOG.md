@@ -5,6 +5,21 @@ All notable changes to the Wasp Claude Code plugin will be documented in this fi
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- Documented Wasp's automatic Entity-based Query cache invalidation in `general-wasp-knowledge.md`, with guidance on when (not) to call `invalidateQueries` manually and where to import `useQueryClient` from (`@tanstack/react-query`, not `wasp/client/operations`).
+- Added "Adding a new operation (the type-bootstrap loop)" section explaining the declare → `wasp build` → type-resolves sequence that causes expected `Cannot find name 'GetX'` errors.
+- Added a client-side import cheat-sheet covering `wasp/client/operations`, `wasp/server/operations`, `wasp/entities`, `wasp/server/auth`, and `@tanstack/react-query`.
+- Added "Migrations in non-interactive (agent) shells" covering the `migrate dev` TTY abort and the `prisma migrate diff` + `migrate deploy` fallback (with `reset --force` reserved for intentional data-loss resets).
+- Added "Seeding the Database" section covering `db.seeds` and `wasp db seed [name]`, including the per-database vs. per-user-default distinction.
+- Added "Creating a verified user for E2E / integration tests" using `hashPassword` from `wasp/server/auth` as an alternative to driving the React-controlled auth form.
+- Expanded the Common Mistakes table with rows for generated-type errors, non-interactive migration failures, `useQueryClient` import source, and missing UI refresh after mutations.
+
+### Changed
+- Softened the Operations guidance from "DO NOT use `useAction`" to "use it when you need optimistic updates" (its documented purpose as Wasp's only native manual cache-invalidation mechanism).
+- `start-dev-server` no longer hard-codes `localhost:3000`/`3001`; it now reads `WASP_WEB_CLIENT_URL` / `PORT` from `.env.server` (falling back to the defaults) so projects with custom ports validate correctly.
+
 ## [1.3.0] - 2026-03-24
 
 ### Added
