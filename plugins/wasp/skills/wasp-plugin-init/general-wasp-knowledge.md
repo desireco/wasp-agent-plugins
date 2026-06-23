@@ -31,64 +31,21 @@ Changes to `schema.prisma` are not applied until database migrations are run.
 
 #### Migrations in non-interactive (agent) shells
 
-`wasp db migrate-dev` runs Prisma's `migrate dev`, which **aborts in non-interactive environments** (no TTY) whenever it would normally prompt — e.g. adding a unique constraint that may cause data loss. There is no `--yes` flag. When running inside an agent/background shell and hitting:
+`wasp db migrate-dev` runs Prisma's `migrate dev`, which **aborts in non-interactive environments** (no TTY) whenever it would normally prompt — e.g. adding a unique constraint that may cause data loss. There is no `--yes` flag.
 
 ```
 Error: Prisma Migrate has detected that the environment is non-interactive, which is not supported.
 ```
 
-fall back to running the Prisma commands directly against Wasp's generated schema (from the app directory). The flow is: regenerate the output, materialize the new migration SQL into a migration directory, then apply non-interactively:
-
-```bash
-# 1. Regenerate Wasp output so .wasp/out/db/schema.prisma reflects your edit
-wasp build
-
-# 2. Materialize the new migration SQL into a migration directory
-cd .wasp/out/db
-TS=$(date +%Y%m%d%H%M%S)
-mkdir -p migrations/${TS}_<descriptive-name>
-npx prisma migrate diff \
-  --from-migrations migrations \
-  --to-schema-datamodel schema.prisma \
-  --shadow-database-url "$DATABASE_URL" \
-  --script > migrations/${TS}_<descriptive-name>/migration.sql
-
-# 3. Apply all migrations non-interactively (no prompts)
-npx prisma migrate deploy --schema schema.prisma
-```
-
-`migrate deploy` never prompts, so it is safe in agent shells. Use `npx prisma migrate reset --force --schema schema.prisma` instead of step 3 only when you intentionally want to drop data and replay every migration from scratch (e.g. irreversible drift). Finally, copy the newly generated `migrations/${TS}_<descriptive-name>/` directory from `.wasp/out/db/migrations/` back into the project's top-level `migrations/` folder so it is committed to version control. Prefer `wasp db migrate-dev` interactively whenever a TTY is available; the above is only the agent-shell fallback.
+Do **not** work around this by running raw `npx prisma` commands against `.wasp/out`. Wasp wraps Prisma with DB/auth setup, and the Wasp CLI docs warn that calling Prisma directly can desync that setup. If you hit the non-interactive abort in an agent/background shell, ask the user to run `wasp db migrate-dev --name <descriptive-name>` in their own terminal — it needs a TTY to prompt safely.
 
 ### Seeding the Database
 
-Wasp ships a first-class seeding mechanism for initial data (dev fixtures, prod reference data). Declare seed functions under `db.seeds` and run them with the CLI:
+Wasp ships a first-class seeding mechanism for database-wide initial data (dev fixtures, prod reference data) via `db.seeds`. Fetch the current docs for the declaration syntax. The agent-specific notes:
 
-```ts
-// main.wasp.ts (Wasp Spec)
-import { app } from "@wasp.sh/spec";
-import devSeed from "./src/dbSeeds" with { type: "ref" };
-
-export default app({
-  // …
-  db: { seeds: [devSeed] },
-});
-```
-
-```ts
-// src/dbSeeds.ts — each seed receives Wasp's Prisma Client
-import type { PrismaClient } from "@prisma/client";
-
-export default async function devSeed(prisma: PrismaClient) {
-  await prisma.task.create({ data: { description: "Learn Wasp", isDone: false } });
-}
-```
-
-```bash
-wasp db seed           # runs the first seed
-wasp db seed devSeed   # runs a specific seed by name
-```
-
-Seeds run once per database. For **per-user** defaults that must exist for every user (including future signups), use an idempotent action invoked from the app shell on load instead — seeds are not the right tool for per-user data.
+- `wasp db seed` runs the only defined seed, or prompts you to choose if multiple are defined. `wasp db seed <seed-name>` runs a specific one.
+- Wasp does **not** track seeds as "already run" — `wasp db seed` executes them every time, so make seed functions idempotent (e.g. `upsert`).
+- Use seeds for **database-wide** initial data, not **per-user** defaults. For data every user (including future signups) must have, run an idempotent Action from the client on load instead.
 
 ## Project Reference
 
@@ -197,15 +154,18 @@ See the config docs for your version (linked from [Config File Format](#config-f
 
 #### Operations
 
-Wasp operations are Queries (read) and Actions (write), declared in the config and implemented in `src/`. They are full-stack type-safe: the client sees typed arguments and return values derived from the server implementation.
+Wasp operations are Queries (read) and Actions (write), declared in the config and implemented in `src/`. Fetch the docs for the full API. The agent-specific workflow:
+
+- **Declare every Entity an operation touches** in its `entities:` array — Wasp uses this both to inject `context.entities` and to auto-invalidate Query caches (see below).
+- **Avoid manual `invalidateQueries` when entity-based invalidation already covers it** (see [Cache invalidation](#cache-invalidation-dont-write-it-yourself)).
 
 ##### Adding a new operation (the type-bootstrap loop)
 
-Generated operation types (`GetTasks`, `CreateTask`, `MarkTaskAsDone`, …) live in `wasp/server/operations` but **only exist after you declare the operation in the config AND rebuild**. Expect this sequence every time:
+Generated operation types (`GetTasks`, `CreateTask`, `MarkTaskAsDone`, …) live in `wasp/server/operations` but **only exist after you declare the operation in the config AND Wasp recompiles**. Expect this sequence every time:
 
 1. Write the operation in `src/X/operations.ts`, annotating it with `satisfies GetFoo<Args, Output>` (or `const getFoo: GetFoo<…> = …`) — importing the type from `wasp/server/operations`. **You will see "no exported member" / `Cannot find name 'GetFoo'` errors here. This is expected, not a bug.**
 2. Declare it in the config (`main.wasp.ts` for Wasp Spec): `query(getFoo, { entities: ["Foo"], auth: true })` or `action(createFoo, { entities: ["Foo"], auth: true })`.
-3. Run `wasp build` (or `wasp compile`). Wasp generates the type.
+3. Let Wasp recompile: if `wasp start` is running it watches and regenerates automatically; otherwise run `wasp compile` (not `wasp build`, which builds for production and clears `.wasp/out`).
 4. The errors vanish. The `satisfies`/annotation now type-checks.
 
 Do not try to "fix" step 1's errors before step 3 — they cannot be resolved until the type is generated.
@@ -239,8 +199,10 @@ When you do need manual control, import the client from React Query, **not** fro
 
 ```ts
 import { useQueryClient } from "@tanstack/react-query"; // ✅ NOT wasp/client/operations
+import { getTasks } from "wasp/client/operations";
+
 const qc = useQueryClient();
-qc.invalidateQueries({ queryKey: ["getTasks"] });
+qc.invalidateQueries({ queryKey: getTasks.queryCacheKey }); // Wasp exposes the cache key on the query
 ```
 
 ##### Client import cheat-sheet
@@ -251,27 +213,36 @@ qc.invalidateQueries({ queryKey: ["getTasks"] });
 | `useQueryClient` (manual cache control) | `@tanstack/react-query` |
 | Server operation types (`GetTasks`, `CreateTask`) | `wasp/server/operations` (type-only) |
 | Entity types (`Task`, `User`) | `wasp/entities` (type-only) |
-| `hashPassword` / `verifyPassword` (e.g. seeding a verified user for tests) | `wasp/auth/password` |
+| `sanitizeAndSerializeProviderData` (build `providerData` for an AuthIdentity, e.g. seeding a verified test user) | `wasp/server/auth` |
 
 ##### Creating a verified user for E2E / integration tests
 
-Wasp's auth form uses React-controlled inputs that reject synthetic events, so browser automation often cannot drive signup. For tests that need a real authenticated user, seed one directly with Wasp's own password hasher:
+For tests that need a pre-existing authenticated user, seed one directly with Wasp's auth helpers rather than driving the signup flow. Use `sanitizeAndSerializeProviderData` from `wasp/server/auth` — it hashes the password and returns the `providerData` JSON string the email provider expects (don't hand-roll it). The email provider requires `emailVerificationSentAt` and `passwordResetSentAt`:
 
 ```ts
-import { hashPassword } from "wasp/auth/password";
+import { sanitizeAndSerializeProviderData } from "wasp/server/auth";
 
-// Create a User + Auth + AuthIdentity (schema is generated in .wasp/out/db/schema.prisma)
-const user = await prisma.user.create({ data: { /* … */ } });
-const auth = await prisma.auth.create({ data: { userId: user.id } });
-await prisma.authIdentity.create({
+const providerData = await sanitizeAndSerializeProviderData<"email">({
+  hashedPassword: "TestPass123!",
+  isEmailVerified: true,
+  emailVerificationSentAt: null,
+  passwordResetSentAt: null,
+});
+
+// Nested create: User → Auth → AuthIdentity (schema generated in .wasp/out/db/schema.prisma)
+await prisma.user.create({
   data: {
-    providerName: "email",
-    providerUserId: "test@example.com",
-    providerData: JSON.stringify({
-      hashedPassword: await hashPassword("TestPass123!"),
-      isEmailVerified: true,
-    }),
-    authId: auth.id,
+    auth: {
+      create: {
+        identities: {
+          create: {
+            providerName: "email",
+            providerUserId: "test@example.com",
+            providerData,
+          },
+        },
+      },
+    },
   },
 });
 ```
@@ -299,7 +270,7 @@ If you don't have full debugging visibility as described in the [Start a Wasp De
 | Types stale/IDE errors after changes                         | Restart TS server `Cmd+Shift+P`                                                                           |
 | Wasp not recognizing changes                                 | **WAIT PATIENTLY** as Wasp recompiles the project. Re-run `wasp start` if necessary.                      |
 | Persistent weirdness after waiting patiently and restarting. | Run `wasp clean` && `wasp start`                                                                          |
-| `Cannot find name 'GetTasks'` (or any `GetX`/`CreateX`) in a new operations file | The generated type doesn't exist until you declare the operation in the config **and** run `wasp build`. See [Operations](#adding-a-new-operation-the-type-bootstrap-loop). |
-| `Prisma Migrate … non-interactive environment`               | `migrate dev` aborts in agent/background shells. Materialize the migration with `prisma migrate diff`, then apply with `prisma migrate deploy` (see [Migrations in non-interactive shells](#migrations-in-non-interactive-agent-shells)). |
+| `Cannot find name 'GetTasks'` (or any `GetX`/`CreateX`) in a new operations file | The generated type doesn't exist until you declare the operation in the config **and** let Wasp recompile (`wasp start` watches, or `wasp compile`). See [Operations](#adding-a-new-operation-the-type-bootstrap-loop). |
+| `Prisma Migrate … non-interactive environment`               | `migrate dev` aborts in agent/background shells. Don't run raw `npx prisma` — ask the user to run `wasp db migrate-dev --name …` in their terminal (see [Migrations in non-interactive shells](#migrations-in-non-interactive-agent-shells)). |
 | `useQueryClient` is not exported from `wasp/client/operations` | Import it from `@tanstack/react-query` directly.                                                          |
 | Mutations don't refresh the UI                               | First check that every overlapping Entity is declared in the Query's `entities:` — Wasp auto-invalidates by Entity. Only add manual `invalidateQueries` for cross-entity/optimistic cases. |
