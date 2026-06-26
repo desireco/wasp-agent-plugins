@@ -45,7 +45,18 @@ Use `db.seeds` for database-wide initial data. Agent-specific notes:
 
 - Wasp does **not** track seeds as "already run"; `wasp db seed` executes them every time, so make seed functions idempotent.
 - Do not use seeds for per-user defaults. For data every user needs, run an idempotent Action from the client on load.
-- When seeding auth users, use `sanitizeAndSerializeProviderData` from `wasp/server/auth`; do not hand-roll `providerData` (see [Operations](#operations) below).
+- When seeding auth users, use `sanitizeAndSerializeProviderData` from `wasp/server/auth`; do not hand-roll `providerData`:
+
+```ts
+import { sanitizeAndSerializeProviderData } from "wasp/server/auth";
+
+const providerData = await sanitizeAndSerializeProviderData<"email">({
+  hashedPassword: "TestPass123!",
+  isEmailVerified: true,
+  emailVerificationSentAt: null,
+  passwordResetSentAt: null,
+});
+```
 
 ## Project Reference
 
@@ -154,12 +165,12 @@ See the config docs for your version (linked from [Config File Format](#config-f
 
 #### Operations
 
-Wasp operations are Queries (read) and Actions (write), declared in the config and implemented in `src/`. Fetch the docs for the full API; below are the agent-specific rules.
+Agent-specific rules:
 
 - **Declare every Entity an operation touches** in its `entities:` array. This powers both `context.entities` and Wasp's automatic Query cache invalidation.
 - **Missing generated types** (`Cannot find name 'GetFoo'`) are expected until the operation is declared in the config and Wasp recompiles. Let `wasp start` regenerate them, or run `wasp compile`; do not use `wasp build` for this.
 - **Call Actions with `async/await` by default.** Use `useAction` only for optimistic updates.
-- **Do not add manual `invalidateQueries`** when matching `entities` already cover the Action/Query pair — Wasp auto-invalidates Queries by shared Entity.
+- **Do not add manual `invalidateQueries`** when matching `entities` already cover the Action/Query pair.
 - **If manual invalidation is necessary**, import `useQueryClient` from `@tanstack/react-query` (Wasp does not re-export it) and use the Wasp query's `queryCacheKey`:
 
 ```ts
@@ -168,21 +179,6 @@ import { getTasks } from "wasp/client/operations";
 
 const queryClient = useQueryClient();
 queryClient.invalidateQueries({ queryKey: getTasks.queryCacheKey });
-```
-
-##### Seeding a verified user for E2E / integration tests
-
-When seeding auth users, use `sanitizeAndSerializeProviderData` from `wasp/server/auth`; do not hand-roll `providerData`:
-
-```ts
-import { sanitizeAndSerializeProviderData } from "wasp/server/auth";
-
-const providerData = await sanitizeAndSerializeProviderData<"email">({
-  hashedPassword: "TestPass123!",
-  isEmailVerified: true,
-  emailVerificationSentAt: null,
-  passwordResetSentAt: null,
-});
 ```
 
 ## Troubleshooting
