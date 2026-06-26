@@ -41,11 +41,11 @@ Do **not** work around this by running raw `npx prisma` commands against `.wasp/
 
 ### Seeding the Database
 
-Wasp ships a first-class seeding mechanism for database-wide initial data (dev fixtures, prod reference data) via `db.seeds`. Fetch the current docs for the declaration syntax. The agent-specific notes:
+Use `db.seeds` for database-wide initial data. Agent-specific notes:
 
-- `wasp db seed` runs the only defined seed, or prompts you to choose if multiple are defined. `wasp db seed <seed-name>` runs a specific one.
-- Wasp does **not** track seeds as "already run" — `wasp db seed` executes them every time, so make seed functions idempotent (e.g. `upsert`).
-- Use seeds for **database-wide** initial data, not **per-user** defaults. For data every user (including future signups) must have, run an idempotent Action from the client on load instead.
+- Wasp does **not** track seeds as "already run"; `wasp db seed` executes them every time, so make seed functions idempotent.
+- Do not use seeds for per-user defaults. For data every user needs, run an idempotent Action from the client on load.
+- When seeding auth users, use `sanitizeAndSerializeProviderData` from `wasp/server/auth`; do not hand-roll `providerData` (see [Operations](#operations) below).
 
 ## Project Reference
 
@@ -154,70 +154,25 @@ See the config docs for your version (linked from [Config File Format](#config-f
 
 #### Operations
 
-Wasp operations are Queries (read) and Actions (write), declared in the config and implemented in `src/`. Fetch the docs for the full API. The agent-specific workflow:
+Wasp operations are Queries (read) and Actions (write), declared in the config and implemented in `src/`. Fetch the docs for the full API; below are the agent-specific rules.
 
-- **Declare every Entity an operation touches** in its `entities:` array — Wasp uses this both to inject `context.entities` and to auto-invalidate Query caches (see below).
-- **Avoid manual `invalidateQueries` when entity-based invalidation already covers it** (see [Cache invalidation](#cache-invalidation-dont-write-it-yourself)).
-
-##### Adding a new operation (the type-bootstrap loop)
-
-Generated operation types (`GetTasks`, `CreateTask`, `MarkTaskAsDone`, …) live in `wasp/server/operations` but **only exist after you declare the operation in the config AND Wasp recompiles**. Expect this sequence every time:
-
-1. Write the operation in `src/X/operations.ts`, annotating it with `satisfies GetFoo<Args, Output>` (or `const getFoo: GetFoo<…> = …`) — importing the type from `wasp/server/operations`. **You will see "no exported member" / `Cannot find name 'GetFoo'` errors here. This is expected, not a bug.**
-2. Declare it in the config (`main.wasp.ts` for Wasp Spec): `query(getFoo, { entities: ["Foo"], auth: true })` or `action(createFoo, { entities: ["Foo"], auth: true })`.
-3. Let Wasp recompile: if `wasp start` is running it watches and regenerates automatically; otherwise run `wasp compile` (not `wasp build`, which builds for production and clears `.wasp/out`).
-4. The errors vanish. The `satisfies`/annotation now type-checks.
-
-Do not try to "fix" step 1's errors before step 3 — they cannot be resolved until the type is generated.
-
-##### Calling operations from the client
+- **Declare every Entity an operation touches** in its `entities:` array. This powers both `context.entities` and Wasp's automatic Query cache invalidation.
+- **Missing generated types** (`Cannot find name 'GetFoo'`) are expected until the operation is declared in the config and Wasp recompiles. Let `wasp start` regenerate them, or run `wasp compile`; do not use `wasp build` for this.
+- **Call Actions with `async/await` by default.** Use `useAction` only for optimistic updates.
+- **Do not add manual `invalidateQueries`** when matching `entities` already cover the Action/Query pair — Wasp auto-invalidates Queries by shared Entity.
+- **If manual invalidation is necessary**, import `useQueryClient` from `@tanstack/react-query` (Wasp does not re-export it) and use the Wasp query's `queryCacheKey`:
 
 ```ts
-import { useQuery, getTasks, createTask } from "wasp/client/operations";
-
-// Query
-const { data, isLoading } = useQuery(getTasks, { lensId }, { enabled: !!lensId });
-
-// Action — call directly with async/await (the default)
-await createTask({ description: "…" });
-```
-
-⚠️ Call actions directly with `async/await` by default. Use Wasp's `useAction` hook only when you need **optimistic updates** — it is the only native manual cache-invalidation mechanism Wasp exposes (see below).
-
-##### Cache invalidation (don't write it yourself)
-
-Wasp **auto-invalidates** Query caches by shared Entity. If an Action and a Query both declare `entities: ["Task"]`, the Query refetches automatically after the Action runs. Per the docs: _"Wasp invalidates a Query's cache whenever an Action that uses the same Entity is executed… Wasp keeps the Queries 'fresh' without requiring you to think about cache invalidation."_
-
-**Do not add manual `invalidateQueries` calls for queries that share an entity with the action.**
-
-Manual cache control is only needed when:
-- A Query spans entities whose dependency Wasp can't infer — declare **all** of them in the Query's `entities:` array so auto-invalidation covers it.
-- You want **optimistic** updates (use the `useAction` hook's `optimisticUpdates` config).
-- You need something beyond entity-based invalidation — fall back to React Query directly.
-
-When you do need manual control, import the client from React Query, **not** from Wasp (Wasp does not re-export it):
-
-```ts
-import { useQueryClient } from "@tanstack/react-query"; // ✅ NOT wasp/client/operations
+import { useQueryClient } from "@tanstack/react-query";
 import { getTasks } from "wasp/client/operations";
 
-const qc = useQueryClient();
-qc.invalidateQueries({ queryKey: getTasks.queryCacheKey }); // Wasp exposes the cache key on the query
+const queryClient = useQueryClient();
+queryClient.invalidateQueries({ queryKey: getTasks.queryCacheKey });
 ```
 
-##### Client import cheat-sheet
+##### Seeding a verified user for E2E / integration tests
 
-| Import | From |
-| --- | --- |
-| `useQuery`, `useAction`, operation functions (`getTasks`, `createTask`, …) | `wasp/client/operations` |
-| `useQueryClient` (manual cache control) | `@tanstack/react-query` |
-| Server operation types (`GetTasks`, `CreateTask`) | `wasp/server/operations` (type-only) |
-| Entity types (`Task`, `User`) | `wasp/entities` (type-only) |
-| `sanitizeAndSerializeProviderData` (build `providerData` for an AuthIdentity, e.g. seeding a verified test user) | `wasp/server/auth` |
-
-##### Creating a verified user for E2E / integration tests
-
-For tests that need a pre-existing authenticated user, seed one directly with Wasp's auth helpers rather than driving the signup flow. Use `sanitizeAndSerializeProviderData` from `wasp/server/auth` — it hashes the password and returns the `providerData` JSON string the email provider expects (don't hand-roll it). The email provider requires `emailVerificationSentAt` and `passwordResetSentAt`:
+When seeding auth users, use `sanitizeAndSerializeProviderData` from `wasp/server/auth`; do not hand-roll `providerData`:
 
 ```ts
 import { sanitizeAndSerializeProviderData } from "wasp/server/auth";
@@ -228,26 +183,7 @@ const providerData = await sanitizeAndSerializeProviderData<"email">({
   emailVerificationSentAt: null,
   passwordResetSentAt: null,
 });
-
-// Nested create: User → Auth → AuthIdentity (schema generated in .wasp/out/db/schema.prisma)
-await prisma.user.create({
-  data: {
-    auth: {
-      create: {
-        identities: {
-          create: {
-            providerName: "email",
-            providerUserId: "test@example.com",
-            providerData,
-          },
-        },
-      },
-    },
-  },
-});
 ```
-
-For pure client unit tests, prefer `mockServer` / `mockQuery` from `wasp/client/test` instead — see the Testing section of the Wasp docs.
 
 ## Troubleshooting
 
@@ -270,7 +206,4 @@ If you don't have full debugging visibility as described in the [Start a Wasp De
 | Types stale/IDE errors after changes                         | Restart TS server `Cmd+Shift+P`                                                                           |
 | Wasp not recognizing changes                                 | **WAIT PATIENTLY** as Wasp recompiles the project. Re-run `wasp start` if necessary.                      |
 | Persistent weirdness after waiting patiently and restarting. | Run `wasp clean` && `wasp start`                                                                          |
-| `Cannot find name 'GetTasks'` (or any `GetX`/`CreateX`) in a new operations file | The generated type doesn't exist until you declare the operation in the config **and** let Wasp recompile (`wasp start` watches, or `wasp compile`). See [Operations](#adding-a-new-operation-the-type-bootstrap-loop). |
-| `Prisma Migrate … non-interactive environment`               | `migrate dev` aborts in agent/background shells. Don't run raw `npx prisma` — ask the user to run `wasp db migrate-dev --name …` in their terminal (see [Migrations in non-interactive shells](#migrations-in-non-interactive-agent-shells)). |
-| `useQueryClient` is not exported from `wasp/client/operations` | Import it from `@tanstack/react-query` directly.                                                          |
-| Mutations don't refresh the UI                               | First check that every overlapping Entity is declared in the Query's `entities:` — Wasp auto-invalidates by Entity. Only add manual `invalidateQueries` for cross-entity/optimistic cases. |
+| `Prisma Migrate … non-interactive environment`               | Needs a TTY. Do not run raw `npx prisma`; ask the user to run `wasp db migrate-dev --name …` in their terminal. |

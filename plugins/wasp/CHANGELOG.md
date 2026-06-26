@@ -11,18 +11,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Documented Wasp's automatic Entity-based Query cache invalidation in `general-wasp-knowledge.md`, with guidance on when (not) to call `invalidateQueries` manually and where to import `useQueryClient` from (`@tanstack/react-query`, not `wasp/client/operations`).
-- Added "Adding a new operation (the type-bootstrap loop)" section explaining the declare → recompile (`wasp start` watches, else `wasp compile`) → type-resolves sequence that causes expected `Cannot find name 'GetX'` errors.
-- Added a client-side import cheat-sheet covering `wasp/client/operations`, `wasp/server/operations`, `wasp/entities`, `wasp/server/auth`, and `@tanstack/react-query`.
-- Added "Migrations in non-interactive (agent) shells" covering the `migrate dev` TTY abort: don't run raw `npx prisma`, ask the user to run `wasp db migrate-dev` in their terminal.
-- Added "Seeding the Database" section covering `wasp db seed` run/prompt behavior, seed idempotency, and the database-wide vs. per-user-default distinction.
-- Added "Creating a verified user for E2E / integration tests" using `sanitizeAndSerializeProviderData` from `wasp/server/auth` (the documented helper, including `emailVerificationSentAt` / `passwordResetSentAt`).
-- Expanded the Common Mistakes table with rows for generated-type errors, non-interactive migration failures, `useQueryClient` import source, and missing UI refresh after mutations.
+- Added agent guidance for operation type generation, Entity-based cache invalidation, non-interactive migrations, seed idempotency, and verified test users.
 
 ### Changed
 
-- Softened the Operations guidance from "DO NOT use `useAction`" to "use it when you need optimistic updates" (its documented purpose as Wasp's only native manual cache-invalidation mechanism).
-- `start-dev-server` no longer hard-codes `localhost:3000`/`3001`; it now reads `WASP_WEB_CLIENT_URL` / `PORT` from `.env.server` (falling back to the defaults) so projects with custom ports validate correctly.
+- Clarified that `useAction` is for optimistic updates.
+- `start-dev-server` now checks custom `WASP_WEB_CLIENT_URL` / `PORT` values from `.env.server`.
 
 ## [1.3.0] - 2026-03-24
 
